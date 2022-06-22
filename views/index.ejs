@@ -1,0 +1,47 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>ナンプレ</title>
+        <link rel="stylesheet" href="/css/style.css">
+    </head>
+
+    <body>
+        <%- include('header'); %>
+        <form action="/index" method="post">
+            <div class="num-form">
+                <ul class="flex-list">
+                <%
+                const numLength = 9;
+                for(let i = 1 ; i <= numLength ; i++)
+                {
+                    for(let j = 1; j <= numLength; j++)
+                    {
+                        let value = values[i - 1][j - 1];
+
+                        if(value == 0)
+                        {
+                            %>
+                            <li><input type="number" name="value" min="1" max="9"></li>
+                            <%
+                        }
+                        else
+                        {
+                            %>
+                            <li><input type="number" name="value" value="<%= value %>" min="1" max="9" readonly="readonly"></li>
+                            <%
+                        }                        
+                    }
+                } %>
+                </ul>
+            </div>
+
+            <input type="submit" value="判定">
+        </form>
+
+        <div class="result-text">
+            <p><%= result %></p>
+
+            
+        </div>
+    </body>
+</html>

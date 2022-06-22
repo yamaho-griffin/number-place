@@ -1,0 +1,64 @@
+header p
+{
+    font-size: 10px;
+}
+
+ul 
+{
+    list-style: none;
+    padding: 0px 0px 0px 0px;
+    /*background-color: red;,*/
+}
+
+li
+{
+    /*padding: 10px 10px 10px 10px;*/
+}
+
+.num-form
+{
+    /*
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    height: 100px;*/
+    width: 450px;
+}
+.num-form input
+{
+    
+    height: 50px;
+    width: 50px;
+    
+}
+.num-form ul 
+{
+    text-align: right;
+    display: flex;
+    flex-wrap:wrap;
+}
+.num-form li
+{
+    width: 11%;
+}
+
+.result-text
+{
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    height:30px;
+}
+.result-text ul 
+{
+    text-align: left;
+    display: flex;
+    
+}
+
+.result-text p
+{
+    font-size: 25px;
+}
