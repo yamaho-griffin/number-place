@@ -5,24 +5,26 @@ const app = express();
 app.use(express.static('public'));
 app.use(express.urlencoded({extended: false}));
 
-
+//全体を保存するやつ
 let values;
 //問題用
 let questionValues;
-
 app.get('/', (req, res) => 
 {
-    //全体を保存するやつ
-    values = new Array(9);
-    for(let y = 0; y < 9; y++) {
-        values[y] = new Array(9).fill(Number(0));
+    let message = "";
+    if(!init())
+    {
+        console.log("詰み!");
+        message="生成に失敗しました。";
     }
-
-    createQuestion();
-
-    questionValues = values;
+    else
+    {
+        message = "";
+    }
     
-    res.render('index.ejs',{result:'',values:values,questionValues:questionValues});
+    
+    
+    res.render('index.ejs',{result:message,values:values,questionValues:questionValues});
 });
 
 app.get('/index', (req, res) => 
@@ -42,11 +44,11 @@ app.post('/index', (req,res) =>
     });
     
     let counter = 0;
-    for(let i = 0;i < 9; i++)
+    for(let j = 0;j < 9; j++)
     {
-        for(let j = 0;j < 9; j++)
+        for(let i = 0;i < 9; i++)
         {
-            values[i][j] = numberArray[counter];
+            values[j][i] = numberArray[counter];
             counter++;
         }
     }
@@ -135,19 +137,15 @@ const checkAllColumn = (() =>
 //1個でも重複があった時点で処理を終了⇒高速化!
 const checkColumn = ((colum) =>
 {
-    console.log("colum:" + colum);
+    //console.log("colum:" + colum);
     let tempArray = [];
     for(let row = 0;row < 9; row++)
     {
-        tempArray[row] = values[colum][row];
-        if(row === 8)
-        {
-            //console.log("[" + colum + "," + row + "]"+ "value:" + values[row][colum]);
-            
-        }
-        //console.log("count" + row + "tempArray" + tempArray[row]);
+        tempArray[row] = values[row][colum];
+
+        //console.log("count:" + row + "tempArray" + tempArray[row]);
     }
-    console.log("tempArray:[" + tempArray + "]:" + existsSameValue(tempArray));
+    //console.log("tempArray:[" + tempArray + "]:" + existsSameValue(tempArray));
     if(!existsSameValue(tempArray))
     {
         //重複
@@ -181,7 +179,7 @@ const checkThreeBOX = ((rowB,columB) =>
     {
         for(let c = columB ; c < columB + 3; c++)
         {
-            if(checkArray[values[r][c]] == true)
+            if(checkArray[values[r][c]] === true)
             {
                 //重複
                 return false;
@@ -209,7 +207,7 @@ const existsSameValue = ((array) =>
     //Set:"一意な"値を格納する。
     var s = new Set(array);
     //全て格納されたかをチェック
-    //console.log("array:" + array);
+    //console.log("array:[" + array + "],size:" + s.size + ",length:" + array.length);
     return s.size === array.length;
 });
 
@@ -225,6 +223,7 @@ const insertNumber = ((quantity,rowB,columnB) =>
     for(let i = 0; i < quantity; i++)
     {
         //console.log("i:" + i);
+        let checkMateCounter = 0;
         while(localBaseArray.length > 0)
         {
             localBaseArray = shuffle(localBaseArray);
@@ -234,8 +233,8 @@ const insertNumber = ((quantity,rowB,columnB) =>
             
             let x = return2DArrayIndex(rowB,columnB,localIndex)[0];
             let y = return2DArrayIndex(rowB,columnB,localIndex)[1];
-            values[x][y] = localValue;
-            console.log("values["+x+"]["+y+"]:" + localValue);
+            values[y][x] = localValue;
+            //console.log("values[y:"+y+"][x:"+x+"]:" + localValue);
             /*
             console.log("localValue:" + localValue);
             
@@ -245,12 +244,13 @@ const insertNumber = ((quantity,rowB,columnB) =>
             
             //console.log("y:" + y + ",check:" + checkRow(y) + "");
             
-            //console.log("localBaseArray:" + localBaseArray);
+            //console.log("localBaseArray:[" + localBaseArray);
             
             
             if(checkColumn(x) && checkRow(y))
             {
                 //console.log("[" + x + "," + y + "]"+ "value:" + localValue);
+                
                 localBaseArray.shift();
                 localIndexArray.shift();
                 break;
@@ -258,12 +258,16 @@ const insertNumber = ((quantity,rowB,columnB) =>
             else
             {
                 //console.log("[" + x + "," + y + "]"+ "value:" + localValue);
-                values[x][y] = 0;
+                //console.log("length:" + localBaseArray.length);
+                values[y][x] = 0;
             }
 
-            
-            
-
+            checkMateCounter++;
+            //console.log("checkMateCounter:" + checkMateCounter);
+            if(checkMateCounter > 81)
+            {
+                return false;
+            }
         } 
     }
 });
@@ -330,6 +334,29 @@ const shuffle = (([...array]) =>
     return array;
 });
 
+const init = (() =>
+{
+    //0を代入
+    values = new Array(9);
+    for(let y = 0; y < 9; y++) {
+        values[y] = new Array(9).fill(Number(0));
+    }
+
+    
+    if(!createQuestion())
+    {
+        questionValues = values;
+        
+        //return false;
+    }
+    else
+    {
+        questionValues = values;
+        //return true;
+    }    
+    return true;
+
+});
 
 const createQuestion = (() =>
 {
@@ -338,7 +365,11 @@ const createQuestion = (() =>
     {   
         for(let c = 0;c < 9; c += 3)
         {
-            insertNumber(8,r,c);
+            if(!insertNumber(3,r,c))
+            {
+                //生成に失敗したとき
+                //return false;
+            }
         }
     }
     
