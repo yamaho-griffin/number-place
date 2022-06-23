@@ -7,6 +7,8 @@ app.use(express.urlencoded({extended: false}));
 
 
 let values;
+//問題用
+let questionValues;
 
 app.get('/', (req, res) => 
 {
@@ -16,32 +18,17 @@ app.get('/', (req, res) =>
         values[y] = new Array(9).fill(Number(0));
     }
 
-    values[0][0] = 5;
-    values[0][1] = 3;
+    createQuestion();
 
-    /*
-    ランダム生成用（作りかけ）
-    //1 -> 9の配列生成
-    const baseArray = new Array(9)
-        .fill(1)
-        .map((n, i) => n + i);
+    questionValues = values;
     
-    for(let r = 0; r < 9 ; r++)
-    {
-
-        //9回抽選
-        let randNum = shuffle(baseArray)[ Math.floor( Math.random() * baseArray.length ) ] ;
-
-    }
-    */
-    
-    res.render('index.ejs',{result:'',values:values});
+    res.render('index.ejs',{result:'',values:values,questionValues:questionValues});
 });
 
 app.get('/index', (req, res) => 
 {
     
-    res.render('index.ejs',{result:'',values:values});
+    res.render('index.ejs',{result:'',values:values,questionValues:questionValues});
 });
 
 app.post('/index', (req,res) =>
@@ -66,18 +53,18 @@ app.post('/index', (req,res) =>
 
     let result = '';
     //横列
-    if(!checkRow())
+    if(!checkAllRow())
     {
-        result = '不正解';
+        result = '不正解。横列に重複があるぞ！';
     }
     else
     {
         result = '正解!';
     }
     //縦列
-    if(!checkColumn())
+    if(!checkAllColumn())
     {
-        result = '不正解';
+        result = '不正解。縦列に重複があるぞ！';
     }
     else
     {
@@ -99,47 +86,77 @@ app.post('/index', (req,res) =>
         }
     }
 
-    res.render('index.ejs',{result:result,values:values});
+    res.render('index.ejs',{result:result,values:values,questionValues:questionValues});
 });
 
-const checkRow = (() =>
+//全ての横列チェック
+const checkAllRow = (() =>
 {
-    let result = false;
     //重複チェック
     for(let r = 0; r < 9; r++)
     {   
-        console.log(values[r]);
-        result = existsSameValue(values[r]);
-        if(result == false)
+        if(!checkRow(r))
         {
-            break;
+            //重複があった場合
+            return false;
         }
     }
     
-    return result;
+    return true;
 });
-const checkColumn = (() =>
+//横列重複チェック
+const checkRow = ((row) =>
 {
-    //重複チェック
+    if(!existsSameValue(values[row]))
+    {
+        //重複
+        return false;
+    }
+    
+    return true;
+});
+
+//全ての縦列をチェック
+const checkAllColumn = (() =>
+{
+    //縦列の個数分ループ
     for(let c = 0; c < 9; c++)
     {   
-        let checkArray = new Array(9).fill(false); 
-        for(let r = 0;r < 9; r++)
+        if(!checkColumn(c))
         {
-            if(checkArray[values[r][c]])
-            {
-                //重複
-                return false;
-            }
-            else
-            {
-                checkArray[values[r][c]] = true;
-            }
+            //重複があった場合
+            return false;
         }
     }
 
     return true;
 });
+//縦列重複チェック
+//1個でも重複があった時点で処理を終了⇒高速化!
+const checkColumn = ((colum) =>
+{
+    console.log("colum:" + colum);
+    let tempArray = [];
+    for(let row = 0;row < 9; row++)
+    {
+        tempArray[row] = values[colum][row];
+        if(row === 8)
+        {
+            //console.log("[" + colum + "," + row + "]"+ "value:" + values[row][colum]);
+            
+        }
+        //console.log("count" + row + "tempArray" + tempArray[row]);
+    }
+    console.log("tempArray:[" + tempArray + "]:" + existsSameValue(tempArray));
+    if(!existsSameValue(tempArray))
+    {
+        //重複
+        return false;
+    }
+    return true;
+});
+
+//全ての3*3BOXで重複があるかをチェック
 const checkBlock = (() =>
 {
     //重複チェック
@@ -156,6 +173,7 @@ const checkBlock = (() =>
     }
     return true;
 });
+//3*3BOXで重複があるかをチェック
 const checkThreeBOX = ((rowB,columB) =>
 {
     let checkArray = new Array(9).fill(false); 
@@ -180,10 +198,124 @@ const checkThreeBOX = ((rowB,columB) =>
 //配列重複チェック
 const existsSameValue = ((array) =>
 {
+    const minusArray = new Array(9).fill(-1).map((n, i) => n - i);
+    for(let i = 0 ; i < array.length ; i++)
+    {
+        if(array[i] === 0)
+        {
+            array[i] = minusArray[i];
+        }
+    }
     //Set:"一意な"値を格納する。
     var s = new Set(array);
     //全て格納されたかをチェック
+    //console.log("array:" + array);
     return s.size === array.length;
+});
+
+/*
+@param number quantity 挿入する個数
+@param number row,column 3*3BOXの左上の座標
+*/
+//ボックスの中で指定個の数だけ数字を挿入
+const insertNumber = ((quantity,rowB,columnB) =>
+{
+    let localBaseArray = new Array(9).fill(1).map((n, i) => n + i);
+    let localIndexArray = new Array(9).fill(0).map((n, i) => n + i);
+    for(let i = 0; i < quantity; i++)
+    {
+        //console.log("i:" + i);
+        while(localBaseArray.length > 0)
+        {
+            localBaseArray = shuffle(localBaseArray);
+            localIndexArray = shuffle(localIndexArray)
+            let localValue  = localBaseArray[0];
+            let localIndex = localIndexArray[0];
+            
+            let x = return2DArrayIndex(rowB,columnB,localIndex)[0];
+            let y = return2DArrayIndex(rowB,columnB,localIndex)[1];
+            values[x][y] = localValue;
+            console.log("values["+x+"]["+y+"]:" + localValue);
+            /*
+            console.log("localValue:" + localValue);
+            
+            console.log("localIndex:" + localIndex);
+            */
+            //console.log("x:" + x + ",check:" + checkColumn(x) + "");
+            
+            //console.log("y:" + y + ",check:" + checkRow(y) + "");
+            
+            //console.log("localBaseArray:" + localBaseArray);
+            
+            
+            if(checkColumn(x) && checkRow(y))
+            {
+                //console.log("[" + x + "," + y + "]"+ "value:" + localValue);
+                localBaseArray.shift();
+                localIndexArray.shift();
+                break;
+            }
+            else
+            {
+                //console.log("[" + x + "," + y + "]"+ "value:" + localValue);
+                values[x][y] = 0;
+            }
+
+            
+            
+
+        } 
+    }
+});
+/*
+[0,1,2,3,4,5,6,7,8]
+↓
+[x,y],[x+1,y],[x+2,y]
+[x,y+1],[x+1,y+1], [5]
+[6] , [7], [8]
+
+@param number rowB,columnB 左上の座標
+@param number index 1次元配列の要素番号
+@return number[] 2次元配列の[x,y]
+*/
+const return2DArrayIndex = ((rowB,columnB,index) =>
+{
+    let result = [-1,-1];
+    //x座標
+    if(index % 3 == 0)
+    {
+        result[0] = columnB;
+    }
+    else if(index % 3 == 1)
+    {
+        result[0] = columnB + 1;
+    }
+    else
+    {
+        result[0] = columnB + 2;
+    }
+    //y座標
+    if(index <= 2)
+    {
+        result[1] = rowB;
+    }
+    else if(index <= 5)
+    {
+        result[1] = rowB + 1;
+    }
+    else
+    {
+        result[1] = rowB + 2;
+    }
+
+    return result;
+});
+
+//指定の数群の中から1つランダムで選ぶ
+const choiceRandomNumber = (([numberArray]) =>
+{
+    numberArray = shuffle(numberArray);
+    return numberArray[0];
 });
 
 //配列シャッフル
@@ -198,5 +330,20 @@ const shuffle = (([...array]) =>
     return array;
 });
 
+
+const createQuestion = (() =>
+{
+    /**/
+    for(let r = 0; r < 9; r += 3)
+    {   
+        for(let c = 0;c < 9; c += 3)
+        {
+            insertNumber(8,r,c);
+        }
+    }
+    
+   
+    //insertNumber(9,0,0);
+});
 
 app.listen(3000);

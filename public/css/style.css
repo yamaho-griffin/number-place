@@ -42,6 +42,10 @@ li
 {
     width: 11%;
 }
+.gray-cover
+{
+    background-color: #d3d3d3;
+}
 
 .result-text
 {
